@@ -1,0 +1,17 @@
+{
+  "name": "rns-registration-script",
+  "version": "1.0.0",
+  "description": "Register names in RNS auction",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "figlet": "^1.2.4",
+    "inquirer": "^7.0.0"
+  }
+}
