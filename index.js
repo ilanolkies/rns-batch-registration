@@ -164,9 +164,9 @@ const run = async () => {
     if (START_AUCTION) {
       // start auctions
       const startAuctions = await registrar.methods.startAuctions(hashes).send(options);
-      success(startAuctions);
 
-      //save tx hashes
+      //save tx hash
+      fs.writeFileSync('start-auction.txt', JSON.stringify(startAuctions));
     }
   }
 

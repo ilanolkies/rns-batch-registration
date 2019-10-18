@@ -2,3 +2,4 @@ node_modules/
 input.json
 .secret
 config.json
+start-auction.txt
