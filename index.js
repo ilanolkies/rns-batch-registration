@@ -2,6 +2,29 @@ const inquirer = require('inquirer');
 const chalk = require('chalk');
 const figlet = require('figlet');
 var fs = require('fs');
+var Web3 = require('web3');
+
+const registrarAbi = [
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_hash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "state",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
 
 const init = () => {
   console.log(
@@ -33,6 +56,12 @@ const success = message => {
   );
 };
 
+const error = message => {
+  console.log(
+    chalk.red.bold(message)
+  );
+};
+
 const run = async () => {
   // show script introduction
   init();
@@ -45,12 +74,28 @@ const run = async () => {
   const content = fs.readFileSync(FILENAME);
   const labels = JSON.parse(content);
 
-  console.log(labels)
+  // cancel if no names
+  if (labels.length < 1)
+    return error('No names to register in the file');
+
+  const web3 = new Web3('https://public-node.rsk.co');
+  const registrar = new web3.eth.Contract(registrarAbi ,'0x5269f5bc51cdd8aa62755c97229b7eeddd8e69a6');
 
   // check domains status
+  let states = [];
 
+  for (label of labels) {
+    const hash = web3.utils.sha3(label);
+    const state = await registrar.methods.state(hash).call();
+    states.push(state);
+  }
 
-  // if they are in the same status,
+  // cancel if they are not in the same status
+  if (!states.every((value, _, array) => value == array[0]))
+    return error('Names are not in the same state');
+
+  // import credentials
+
   // ask to run next step
 
   // save tx hashes
