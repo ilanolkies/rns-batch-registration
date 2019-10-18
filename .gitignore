@@ -1,2 +1,4 @@
 node_modules/
 input.json
+.secret
+config.json
