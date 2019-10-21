@@ -1,4 +1,4 @@
-# RNS Registration tool
+# RNS btach registration
 
 Use this tool to register names in auction registrar.
 
