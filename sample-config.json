@@ -1,3 +1,5 @@
 {
-  "node": "https://public-node.rsk.co"
+  "node": "https://public-node.rsk.co",
+  "registrarAddress": "0x5269f5bc51cdd8aa62755c97229b7eeddd8e69a6",
+  "rifAddress": "	0x2acc95758f8b5f583470ba265eb685a8f45fc9d5"
 }

@@ -1,24 +1,27 @@
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const figlet = require('figlet');
-var fs = require('fs');
-var Web3 = require('web3');
-var HDWalletProvider = require('truffle-hdwallet-provider');
+const fs = require('fs');
+const Web3 = require('web3');
+const HDWalletProvider = require('truffle-hdwallet-provider');
+const crypto = require('crypto');
 
-const registrarAbi = [
+const registrarAbi = require('./RegistrarABI.json');
+
+const rifAbi = [
   {
     "constant": true,
     "inputs": [
       {
-        "name": "_hash",
-        "type": "bytes32"
+        "name": "_owner",
+        "type": "address"
       }
     ],
-    "name": "state",
+    "name": "balanceOf",
     "outputs": [
       {
         "name": "",
-        "type": "uint8"
+        "type": "uint256"
       }
     ],
     "payable": false,
@@ -26,20 +29,33 @@ const registrarAbi = [
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_hashes",
-        "type": "bytes32[]"
-      }
+    "constant":false,
+    "inputs":[
+       {
+          "name":"_to",
+          "type":"address"
+       },
+       {
+          "name":"_value",
+          "type":"uint256"
+       },
+       {
+          "name":"data",
+          "type":"bytes"
+       }
     ],
-    "name": "startAuctions",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
+    "name":"transferAndCall",
+    "outputs":[
+       {
+          "name":"",
+          "type":"bool"
+       }
+    ],
+    "payable":false,
+    "stateMutability":"nonpayable",
+    "type":"function"
+ }
+]
 
 const init = () => {
   console.log(
@@ -77,10 +93,13 @@ const alert = message => {
   );
 };
 
-const error = message => {
+const error = (message, provider = null) => {
   console.log(
     chalk.red.bold(message)
   );
+
+  if (provider)
+    provider.engine.stop();
 };
 
 const run = async () => {
@@ -102,12 +121,13 @@ const run = async () => {
 
   // cancel if no names
   if (labels.length < 1)
-    return error('No names to register in the file');
+    return error('No names to register in the file', provider);
 
   alert(`About to check ${labels} states`);
 
   const web3 = new Web3(config.node);
-  const registrar = new web3.eth.Contract(registrarAbi ,'0x8cd41103edcf309714e771cd0c01f1e2b09f4842');
+  const registrar = new web3.eth.Contract(registrarAbi, config.registrarAddress);
+  const rif = new web3.eth.Contract(rifAbi, config.rifAddress)
 
   // check domains status
   const states = [];
@@ -133,13 +153,13 @@ const run = async () => {
 
   // cancel if they are not in the same status
   if (!states.every((value, _, array) => value == array[0]))
-    return error('Names are not in the same state');
+    return error('Names are not in the same state', provider);
 
   // import credentials
   const mnemonic = fs.readFileSync('.secret', 'utf-8');
 
   if (!mnemonic)
-    return error('No mnemonic found');
+    return error('No mnemonic found', provider);
 
   var provider = new HDWalletProvider(mnemonic, config.node);
   web3.setProvider(provider);
@@ -154,7 +174,7 @@ const run = async () => {
 
   // ask to run next step
   if (state == '0') {
-    // auction state
+    // open state
     const { START_AUCTION } = await inquirer.prompt([{
       name: 'START_AUCTION',
       type: 'confirm',
@@ -167,6 +187,53 @@ const run = async () => {
 
       //save tx hash
       fs.writeFileSync('start-auction.txt', JSON.stringify(startAuctions));
+    }
+  } else if (state == '1') {
+    let amount = config.amount || 1;
+    // auction state
+    const { BID } = await inquirer.prompt([{
+      name: 'BID',
+      type: 'confirm',
+      message: `Bid in the auctions for ${amount} RIF?`
+    }]);
+
+    if (BID) {
+      alert('Randomly generated salts will be saved in a bid-data folder.');
+
+      const rifBalance = await rif.methods.balanceOf(from).call();
+
+      const cost = hashes.length * amount;
+      if (rifBalance < cost * 1e18)
+        return error(`Not enough RIF tokens to bid - cost: ${cost} RIF, balance: ${rifBalance}`, provider);
+
+      let bids = []
+
+      for (hash of hashes) {
+        const salt = `0x${crypto.randomBytes(32).toString('hex')}`;
+
+        // sha bid
+        const value = '0xde0b6b3a7640000';
+        const shaBid = await registrar.methods.shaBid(
+          hash,
+          from,
+          value,
+          salt
+        ).call();
+
+        // bid with transferAndCall
+        const bid_data = {
+          hash, from, value, salt, shaBid,
+        };
+
+        bids.push(bid_data);
+
+        fs.writeFileSync(`bids/${hash}.json`, JSON.stringify(bid_data));
+
+        const tx = await rif.methods.transferAndCall(config.registrarAddress, value, `0x1413151f${shaBid.slice(2)}`).send(options);
+        fs.writeFileSync(`bids/tx-${hash}.json`, JSON.stringify(tx));
+      }
+
+      fs.writeFileSync(`biddata.json`, JSON.stringify(bids));
     }
   }
 
