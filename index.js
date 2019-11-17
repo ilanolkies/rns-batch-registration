@@ -123,7 +123,7 @@ const run = async () => {
   if (labels.length < 1)
     return error('No names to register in the file', provider);
 
-  alert(`About to check ${labels} states`);
+  alert(`About to check ${labels} states (#: ${labels.length})`);
 
   const web3 = new Web3(config.node);
   const registrar = new web3.eth.Contract(registrarAbi, config.registrarAddress);
@@ -144,7 +144,7 @@ const run = async () => {
     if (n == 0) return 'Open';
     if (n == 1) return 'Auction';
     if (n == 2) return 'Owned';
-    if (n == 3) return 'Reveal';
+    if (n == 4) return 'Reveal';
   }
 
   const state = states[0];
@@ -234,6 +234,22 @@ const run = async () => {
       }
 
       fs.writeFileSync(`biddata.json`, JSON.stringify(bids));
+    }
+  } else if (state == '4') {
+    const { UNSEAL } = await inquirer.prompt([{
+      name: 'UNSEAL',
+      type: 'confirm',
+      message: `Unseal bids?`
+    }]);
+
+    if (UNSEAL) {
+      for (hash of hashes) {
+        const { value, salt } = JSON.parse(fs.readFileSync(`bids/${hash}.json`));
+
+        const tx = await registrar.methods.unsealBid(hash, value, salt).send(options);
+
+        fs.writeFileSync(`unseals/tx-${hash}.json`, JSON.stringify(tx));
+      }
     }
   }
 

@@ -62,5 +62,27 @@
     "payable": false,
     "stateMutability": "pure",
     "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+    {
+        "name": "_hash",
+        "type": "bytes32"
+    },
+    {
+        "name": "_value",
+        "type": "uint256"
+    },
+    {
+        "name": "_salt",
+        "type": "bytes32"
+    }
+    ],
+    "name": "unsealBid",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ]

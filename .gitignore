@@ -6,3 +6,4 @@ start-auction.txt
 biddata.json
 bids/*.json
 .DS_Store
+unseals/*.json
