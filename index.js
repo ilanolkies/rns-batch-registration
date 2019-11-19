@@ -251,8 +251,21 @@ const run = async () => {
         fs.writeFileSync(`unseals/tx-${hash}.json`, JSON.stringify(tx));
       }
     }
-  }
+  } else if (state == '2') {
+    const { FINALIZE } = await inquirer.prompt([{
+      name: 'FINALIZE',
+      type: 'confirm',
+      message: `Finalize bids?`
+    }]);
 
+    if (FINALIZE) {
+      for (hash of hashes) {
+        const tx = await registrar.methods.finalizeAuction(hash).send(options);
+
+        fs.writeFileSync(`finalize/tx-${hash}.json`, JSON.stringify(tx));
+      }
+    }
+  }
 
   // show success message
   provider.engine.stop();

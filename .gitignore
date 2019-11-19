@@ -7,3 +7,4 @@ biddata.json
 bids/*.json
 .DS_Store
 unseals/*.json
+finalize/*.json
