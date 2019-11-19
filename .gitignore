@@ -3,3 +3,8 @@ input.json
 .secret
 config.json
 start-auction.txt
+biddata.json
+bids/*.json
+.DS_Store
+unseals/*.json
+finalize/*.json
